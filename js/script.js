@@ -33,15 +33,15 @@
     var url = "producto.html?p=" + encodeURIComponent(p.id);
     return '<article class="product' + (agotado ? ' agotado' : '') + '" data-cat="' + p.cat + '">' +
       '<div class="p-media" style="background:linear-gradient(150deg,' + FONDOS[i % FONDOS.length] + ')">' +
-        '<img src="logos/' + p.img + '" alt="' + p.nombre + '" loading="lazy" onerror="this.remove()">' +
+        '<img src="logos/' + p.img + '" alt="' + p.nombre + '" loading="lazy" onerror="nexaImg(this)">' +
         (p.top ? '<span class="badge top">' + I.star + 'TOP</span>' : '') +
         '<span class="badge cat">' + CATEGORIAS[p.cat] + '</span>' +
         (agotado ? '<span class="badge sold">Agotado</span>' : '') +
       '</div>' +
       '<div class="p-body">' +
         '<div><h3 class="p-name">' + p.nombre + '</h3><div class="p-type">' + p.tipo + '</div></div>' +
-        '<div class="chips"><span class="chip">' + I.bolt + ENTREGA + '</span><span class="chip">' + I.clock + DURACION + '</span></div>' +
-        '<div class="price-row"><span class="price">' + dinero(p.precio) + '</span>' +
+        '<div class="chips"><span class="chip">' + I.bolt + ENTREGA + '</span><span class="chip">' + I.clock + (p.planes ? 'Desde ' + C.etiquetaMeses(p.planes[0].meses) : (p.duracion || DURACION)) + '</span></div>' +
+        '<div class="price-row">' + (p.planes ? '<span class="desde">Desde</span>' : '') + '<span class="price">' + dinero(p.precio) + '</span>' +
           (p.old ? '<span class="old">' + dinero(p.old) + '</span>' : '') +
           (descuento > 0 ? '<span class="off">-' + descuento + '%</span>' : '') + '</div>' +
         '<div class="stock' + (agotado ? ' out' : bajo ? ' low' : '') + '"><i></i>' + (agotado ? 'Agotado' : bajo ? 'Quedan ' + p.stock : 'En stock') + '</div>' +
@@ -146,9 +146,107 @@
     return m[4] ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], 0)
                 : new Date(+m[1], m[2] - 1, +m[3], 23, 59, 59);
   }
+  // ---- Carrusel de banners (config.js → BANNERS) ----
+  function construirBanners(el) {
+    var lista = (C.BANNERS || []).map(function (b) {
+      var ps = (b.productos || []).map(function (id) {
+        for (var i = 0; i < PRODUCTOS.length; i++) if (PRODUCTOS[i].id === id) return PRODUCTOS[i];
+        return null;
+      }).filter(function (p) { return p && p.stock > 0; });
+      var fin = fechaLimite(b.hasta);
+      if (fin && fin.getTime() <= Date.now()) return null;
+      if (b.productos && b.productos.length && !ps.length) return null;
+      var desde = ps.length ? Math.min.apply(null, ps.map(function (p) { return p.precio; })) : 0;
+      return { b: b, desde: desde };
+    }).filter(Boolean);
+    if (!lista.length) return false;
+
+    var total = lista.length, slides = '', puntos = '';
+    // posición de cada banner respecto al activo (-2..2), para que el carrusel avance deslizando y dé la vuelta sin saltos
+    function pos(i, act) { var m = Math.floor(total / 2); return ((i - act + total + m) % total) - m; }
+    lista.forEach(function (x, i) {
+      var b = x.b;
+      slides += '<div class="bn' + (i === 0 ? ' on' : '') + '" role="group" aria-roledescription="diapositiva" aria-label="' + (i + 1) + ' de ' + total + '" style="transform:translateX(' + (pos(i, 0) * 100) + '%)"' + (i === 0 ? '' : ' aria-hidden="true" inert') + '>' +
+        '<img class="bn-img" src="logos/' + b.img + '" alt="" ' + (i === 0 ? '' : 'loading="lazy" ') + 'onerror="nexaImg(this)">' +
+        '<div class="bn-copy">' +
+          '<span class="offer-kick">' + (b.etiqueta || '') + '</span>' +
+          '<h2>' + (b.titulo || '') + '</h2>' +
+          (b.texto ? '<p>' + b.texto + '</p>' : '') +
+          (x.desde ? '<div class="bn-price">Desde <b>' + dinero(x.desde) + '</b></div>' : '') +
+          '<a class="btn primary big" href="#catalogo" data-bn="' + i + '">' + (b.boton || 'Ver catálogo') + I.arrow + '</a>' +
+        '</div></div>';
+      puntos += '<button type="button" class="bn-dot" data-i="' + i + '" aria-label="Ir al banner ' + (i + 1) + '"' + (i === 0 ? ' aria-current="true"' : '') + '></button>';
+    });
+    var FLECHA = function (d) { return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + d + '"/></svg>'; };
+    el.innerHTML = '<div class="bnr" role="region" aria-roledescription="carrusel" aria-label="Destacados de Nexa Store Perú">' +
+      '<div class="bn-track">' + slides + '</div>' +
+      (total > 1 ? '<button type="button" class="bn-nav prev" aria-label="Banner anterior">' + FLECHA('M15 5l-7 7 7 7') + '</button>' +
+        '<button type="button" class="bn-nav next" aria-label="Banner siguiente">' + FLECHA('M9 5l7 7-7 7') + '</button>' +
+        '<div class="bn-dots">' + puntos + '</div>' : '') +
+      '</div>';
+    el.hidden = false;
+
+    var cont = el.querySelector('.bnr');
+    var hojas = el.querySelectorAll('.bn');
+    var dots = el.querySelectorAll('.bn-dot');
+    var idx = 0, reloj = null;
+    var reducido = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function ir(n) {
+      idx = (n + total) % total;
+      hojas.forEach(function (h, i) {
+        var o = pos(i, idx), antes = h._o === undefined ? o : h._o;
+        h.style.transition = Math.abs(o - antes) > 1 ? 'none' : '';   // los que dan la vuelta por detrás no se ven cruzar
+        h.style.transform = 'translateX(' + (o * 100) + '%)';
+        h._o = o;
+        h.classList.toggle('on', i === idx);
+        h.inert = i !== idx;
+        if (i === idx) h.removeAttribute('aria-hidden'); else h.setAttribute('aria-hidden', 'true');
+      });
+      dots.forEach(function (d, i) { if (i === idx) d.setAttribute('aria-current', 'true'); else d.removeAttribute('aria-current'); });
+    }
+    function parar() { clearInterval(reloj); reloj = null; }
+    function auto() { parar(); if (total > 1 && !document.hidden) reloj = setInterval(function () { ir(idx + 1); }, (parseFloat(C.BANNERS_SEGUNDOS) || 5) * 1000); }
+
+    if (total > 1) {
+      cont.addEventListener('mouseenter', parar);
+      cont.addEventListener('mouseleave', auto);
+      // solo se pausa si alguien navega con el teclado; tocar un punto o una flecha con el mouse o el dedo no lo detiene
+      cont.addEventListener('focusin', function (e) { if (e.target.matches && e.target.matches(':focus-visible')) parar(); });
+      cont.addEventListener('focusout', auto);
+      document.addEventListener('visibilitychange', function () { if (document.hidden) parar(); else auto(); });
+      var x0 = null;
+      cont.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; parar(); }, { passive: true });
+      cont.addEventListener('touchend', function (e) {
+        if (x0 !== null) { var dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) ir(idx + (dx < 0 ? 1 : -1)); }
+        x0 = null; auto();
+      });
+      cont.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowLeft') ir(idx - 1);
+        else if (e.key === 'ArrowRight') ir(idx + 1);
+      });
+      auto();
+    }
+
+    el.addEventListener('click', function (e) {
+      var n = e.target.closest('.bn-nav'), d = e.target.closest('.bn-dot'), a = e.target.closest('[data-bn]');
+      if (n) ir(idx + (n.classList.contains('next') ? 1 : -1));
+      else if (d) ir(parseInt(d.dataset.i, 10));
+      else if (a) {
+        var b = lista[parseInt(a.dataset.bn, 10)].b;
+        var f = b.filtro || 'all';
+        tabs.forEach(function (t) { if (t.dataset.filter === f) t.click(); });
+        if (buscar) { buscar.value = b.buscar || ''; buscar.dispatchEvent(new Event('input')); }
+        if (window.nexaTrack) window.nexaTrack('banner_click', { banner: b.titulo });
+      }
+    });
+    return true;
+  }
+
   var banner = document.getElementById('oferta');
   var OF = C.OFERTA;
-  if (banner && OF && OF.activa) {
+  var hayBanners = banner ? construirBanners(banner) : false;
+  if (banner && !hayBanners && OF && OF.activa) {
     var po = null;
     PRODUCTOS.forEach(function (x) { if (x.id === OF.producto) po = x; });
     var fin = fechaLimite(OF.hasta);
@@ -170,7 +268,7 @@
             '<a class="btn primary big" href="producto.html?p=' + encodeURIComponent(po.id) + '">Ver oferta' + I.arrow + '</a>' +
           '</div>' +
           '<div class="offer-media" style="background:linear-gradient(150deg,' + FONDOS[k % FONDOS.length] + ')">' +
-            '<img src="logos/' + po.img + '" alt="" onerror="this.remove()">' +
+            '<img src="logos/' + po.img + '" alt="" onerror="nexaImg(this)">' +
             (pd > 0 ? '<span class="offer-off">-' + pd + '%</span>' : '') +
           '</div>' +
         '</div>';

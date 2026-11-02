@@ -36,6 +36,29 @@ window.NEXA = {
   // titulo y texto son opcionales (si dejas texto vacío se arma solo con el precio)
   OFERTA: { activa: true, producto: "netflix", titulo: "Oferta de la semana", texto: "", hasta: "" },
 
+  // Carrusel de banners de la página principal (reemplaza al banner de OFERTA mientras tenga elementos).
+  // img: archivo dentro de "logos" · productos: ids de los productos del grupo (el "desde S/ X" sale del más barato con stock)
+  // filtro: categoría que se abre al pulsar el botón ("streaming", "ia", "otros" o "all") · buscar: texto opcional para filtrar el catálogo
+  // hasta: (opcional) fecha límite, ej. "2026-11-30"; después de esa fecha el banner se oculta solo
+  // Deja la lista vacía ([]) para volver al banner de OFERTA de arriba.
+  BANNERS: [
+    { img: "banner-cine.webp", etiqueta: "Nexa Store Perú · Cine y series", titulo: "Todo tu streaming en un solo lugar",
+      texto: "Netflix, Disney+, Prime Video, HBO Max y más.", boton: "Ver streaming", filtro: "streaming",
+      productos: ["netflix", "disney", "prime-video", "hbo-max-estandar", "hbo-max-platino", "paramount", "apple-tv", "crunchyroll"] },
+    { img: "banner-ia.webp", etiqueta: "Nexa Store Perú · Inteligencia artificial", titulo: "La IA que usan todos, al mejor precio",
+      texto: "ChatGPT Plus y Gemini.", boton: "Ver IA", filtro: "ia",
+      productos: ["chatgpt-plus", "gemini"] },
+    { img: "banner-futbol.webp", etiqueta: "Nexa Store Perú · Fútbol", titulo: "Vive la Liga 1 Max",
+      texto: "DirecTV Go, Claro video y Movistar TV.", boton: "Ver fútbol", filtro: "streaming", buscar: "Liga 1 Max",
+      productos: ["directv-go-liga-1-max", "claro-video-liga-1-max", "movistar-tv-liga-1-max"] },
+    { img: "banner-seguridad.webp", etiqueta: "Nexa Store Perú · Seguridad", titulo: "Navega y protege tu equipo",
+      texto: "NordVPN, HolaVPN, ESET y McAfee.", boton: "Ver seguridad", filtro: "otros",
+      productos: ["nordvpn", "holavpn", "eset-security-essential", "mcafee-antivirus"] },
+    { img: "banner-creativos.webp", etiqueta: "Nexa Store Perú · Creativos y música", titulo: "Crea, edita y disfruta",
+      texto: "Canva Pro, CapCut Pro y Spotify.", boton: "Ver más productos", filtro: "otros",
+      productos: ["canva-pro", "capcut-pro", "spotify-premium-x-3-meses"] }
+  ],
+
   // Analítica de visitas: elige una (o ninguna). Vacío = desactivada.
   // ga4: tu ID de medición de Google Analytics 4, ej. "G-ABC123XYZ" (Admin → Flujos de datos → tu sitio web)
   // plausible: tu dominio tal como lo registraste en Plausible, ej. "nexastore.pe"
@@ -56,30 +79,59 @@ window.NEXA = {
   // Si dejas cloudName o preset vacío, el botón de subir no aparece. NUNCA pongas aquí tu API secret.
   // incluirEnlace: true agrega el enlace de la imagen al mensaje de WhatsApp. Ponlo en false si tus
   // comprobantes son privados (el enlace no se abriría); en ese caso los buscas por el código del pedido.
-  CLOUDINARY: { cloudName: "", preset: "", carpeta: "comprobantes/{metodo}", incluirEnlace: true },
+  CLOUDINARY: { cloudName: "cr-recargas-pe", preset: "comprobantes", carpeta: "comprobantes", incluirEnlace: true },
 
   // img: nombre del archivo dentro de la carpeta "logos"
   // top: true muestra la etiqueta TOP · old: precio anterior (opcional)
   // stock: unidades disponibles. Cuando llegue a 0, el producto se muestra "Agotado" automáticamente
   // en todas partes (catálogo, carrito, pago) y ya no se puede comprar.
+  // planes: (opcional) periodos que el cliente elige en la página del producto. Cada uno: { meses, precio, old (opcional) }
+  //         El primero es el que se muestra en el catálogo como "Desde". Si no hay planes, se usa precio y duración normales.
+  // duracion: (opcional) texto de duración propio del producto, ej. "1 año". Si no se pone, se usa DURACION.
+  // caract: (opcional) lista de [valor, texto] que se muestra en la página del producto, ej. ["+3500", "canales"]
   // id: se genera solo a partir del nombre (se usa en la dirección de la página del producto)
   PRODUCTOS: [
-    { nombre: "Netflix",         cat: "streaming", tipo: "Perfil individual", img: "netflix.png",         precio: 11.90, old: 16.90, stock: 3,  top: true },
-    { nombre: "Disney+",         cat: "streaming", tipo: "Perfil individual", img: "disney.png",          precio: 8.90,  old: 13.90, stock: 7,  top: true },
-    { nombre: "Prime Video",     cat: "streaming", tipo: "Perfil individual", img: "prime-video.png",     precio: 7.90,  old: 11.90, stock: 12 },
-    { nombre: "HBO Max Estándar", cat: "streaming", tipo: "Perfil individual", img: "hbo-max-estandar.png", precio: 8.50,  old: 12.90, stock: 9 },
-    { nombre: "HBO Max Platino",  cat: "streaming", tipo: "Perfil individual", img: "hbo-max-platino.png",  precio: 11.90, old: 16.90, stock: 5 },
-    { nombre: "Crunchyroll",     cat: "streaming", tipo: "Perfil individual", img: "crunchyroll.png",     precio: 7.50,  old: 11.90, stock: 11 },
-    { nombre: "Paramount+",      cat: "streaming", tipo: "Perfil individual", img: "paramount.png",       precio: 7.90,  old: 12.90, stock: 9 },
-    { nombre: "Apple TV+",       cat: "streaming", tipo: "Perfil individual", img: "apple-tv.png",        precio: 8.90,  old: 13.90, stock: 8 },
-    { nombre: "YouTube Premium", cat: "streaming", tipo: "Acceso compartido", img: "youtube-premium.png", precio: 6.90,  old: 10.90, stock: 15 },
-    { nombre: "ChatGPT Plus",    cat: "ia",        tipo: "Acceso compartido", img: "chatgpt.png",         precio: 9.90,  old: 14.90, stock: 23, top: true },
-    { nombre: "Claude Pro",      cat: "ia",        tipo: "Acceso compartido", img: "claude.png",          precio: 29.90, old: 39.90, stock: 4 },
-    { nombre: "Gemini",          cat: "ia",        tipo: "Acceso compartido", img: "gemini.png",          precio: 14.90, old: 19.90, stock: 10 },
-    { nombre: "Spotify Premium", cat: "otros",     tipo: "Acceso compartido", img: "spotify.png",         precio: 6.90,  old: 9.90,  stock: 18 },
-    { nombre: "Canva Pro",       cat: "otros",     tipo: "Acceso compartido", img: "canva.png",           precio: 5.90,  old: 9.90,  stock: 20 },
-    { nombre: "CapCut Pro",      cat: "otros",     tipo: "Acceso compartido", img: "capcut.png",          precio: 8.90,  old: 14.90, stock: 13 },
-    { nombre: "Microsoft 365",   cat: "otros",     tipo: "Acceso compartido", img: "microsoft-365.png",   precio: 12.90, old: 19.90, stock: 10 }
+    { nombre: "Netflix",         cat: "streaming", tipo: "Perfil individual", img: "netflix.png",         precio: 14.00, old: 16.90, stock: 3,  top: true, caract: [["Full HD", "buena calidad"], ["1", "perfil propio"]] },
+    { nombre: "Disney+",         cat: "streaming", tipo: "Perfil individual", img: "disney.png",          precio: 10.00,  old: 13.90, stock: 5,  top: true, caract: [["4K", "Ultra HD"], ["1", "perfil propio"]] },
+    { nombre: "Disney+ - Cuenta completa", cat: "streaming", tipo: "Cuenta completa", img: "disney.png", precio: 40.00, stock: 3, caract: [["4K", "Ultra HD"], ["4", "pantallas a la vez"]] },
+    { nombre: "Prime Video",     cat: "streaming", tipo: "Perfil individual", img: "prime-video.png",     precio: 7.90,  old: 11.90, stock: 5, caract: [["Full HD", "buena calidad"], ["1", "perfil propio"]] },
+    { nombre: "HBO Max Estándar", cat: "streaming", tipo: "Perfil individual", img: "hbo-max-estandar.png", precio: 8.50,  old: 12.90, stock: 5, caract: [["Full HD", "1080p"], ["1", "perfil propio"]] },
+    { nombre: "HBO Max Estándar - Cuenta completa", cat: "streaming", tipo: "Cuenta completa", img: "hbo-max-estandar.png", precio: 18.00, stock: 5, caract: [["Full HD", "1080p"], ["2", "pantallas a la vez"]] },
+    { nombre: "HBO Max Platino",  cat: "streaming", tipo: "Perfil individual", img: "hbo-max-platino.png",  precio: 11.90, old: 16.90, stock: 5, caract: [["4K", "Ultra HD"], ["1", "perfil propio"]] },
+    { nombre: "HBO Max Platino - Cuenta completa", cat: "streaming", tipo: "Cuenta completa", img: "hbo-max-platino.png", precio: 24.00, stock: 5, caract: [["4K", "Ultra HD"], ["4", "pantallas a la vez"]] },
+    { nombre: "DirecTV Go + Liga 1 Max", cat: "streaming", tipo: "Perfil · 1 dispositivo", img: "directv-go.png", precio: 30.00, stock: 3, caract: [["Liga 1 Max", "incluida"], ["1", "dispositivo"]] },
+    { nombre: "DirecTV Go + Liga 1 Max - Cuenta completa", cat: "streaming", tipo: "Cuenta completa", img: "directv-go.png", precio: 55.00, stock: 3, caract: [["Liga 1 Max", "incluida"], ["Todos", "los perfiles"]] },
+    { nombre: "Crunchyroll",     cat: "streaming", tipo: "Perfil individual", img: "crunchyroll.png",     precio: 7.00,  old: 11.90, stock: 5, caract: [["Sin", "anuncios"], ["1", "perfil propio"]] },
+    { nombre: "Crunchyroll - Cuenta completa", cat: "streaming", tipo: "Cuenta completa", img: "crunchyroll.png", precio: 15.00, stock: 3, caract: [["Sin", "anuncios"], ["4", "pantallas a la vez"]] },
+    { nombre: "Claro video + Liga 1 Max", cat: "streaming", tipo: "Perfil · 1 dispositivo", img: "claro-video.png", precio: 22.00, stock: 5, caract: [["Liga 1 Max", "incluida"], ["1", "dispositivo"]] },
+    { nombre: "Claro video + Liga 1 Max - Cuenta completa", cat: "streaming", tipo: "Cuenta completa", img: "claro-video.png", precio: 35.00, stock: 5, caract: [["Liga 1 Max", "incluida"], ["Todos", "los perfiles"]] },
+    { nombre: "Movistar TV + Liga 1 Max", cat: "streaming", tipo: "Perfil individual", img: "movistar-tv.png", precio: 25.00, stock: 5, caract: [["Liga 1 Max", "incluida"], ["TV", "en vivo"]] },
+    { nombre: "Movistar TV + Liga 1 Max - Cuenta completa", cat: "streaming", tipo: "Cuenta completa", img: "movistar-tv.png", precio: 40.00, stock: 5, caract: [["Liga 1 Max", "incluida"], ["TV", "en vivo"], ["Todos", "los perfiles"]] },
+    { nombre: "Paramount+",      cat: "streaming", tipo: "Perfil individual", img: "paramount.png",       precio: 7.90,  old: 12.90, stock: 5, caract: [["Full HD", "buena calidad"], ["1", "perfil propio"]] },
+    { nombre: "Apple TV+",       cat: "streaming", tipo: "Perfil · 1 dispositivo", img: "apple-tv.png",        precio: 10.00,  old: 13.90, stock: 5, caract: [["4K", "HDR"], ["1", "dispositivo"], ["Apple", "Originals"]] },
+    { nombre: "Apple TV+ - Cuenta completa", cat: "streaming", tipo: "Cuenta completa", img: "apple-tv.png", precio: 17.00, stock: 3, caract: [["4K", "HDR"], ["Apple", "Originals"]] },
+    { nombre: "IPTV Smarters Pro", cat: "streaming", tipo: "Perfil · 1 dispositivo", img: "iptv-smarters.png", precio: 13.00, stock: 5,
+      caract: [["+3500", "canales"], ["+8500", "series"], ["+45000", "películas"], ["1", "dispositivo"]] },
+    { nombre: "IPTV Smarters Pro - Cuenta completa", cat: "streaming", tipo: "Cuenta completa · 3 dispositivos", img: "iptv-smarters.png", precio: 25.00, stock: 5,
+      caract: [["+3500", "canales"], ["+8500", "series"], ["+45000", "películas"], ["3", "dispositivos a la vez"]] },
+    { nombre: "YouTube Premium", cat: "streaming", tipo: "Acceso compartido", img: "youtube-premium.png", precio: 9.00,  old: 10.90, stock: 5, caract: [["Sin", "anuncios"], ["Music", "incluido"], ["Descargas", "sin conexión"]] },
+    { nombre: "ChatGPT Plus",    cat: "ia",        tipo: "Acceso compartido", img: "chatgpt.png",         precio: 9.90,  old: 14.90, stock: 5, top: true, caract: [["Modelos", "avanzados"], ["Más", "límites de uso"]] },
+    { nombre: "Claude Pro",      cat: "ia",        tipo: "Acceso compartido", img: "claude.png",          precio: 29.90, old: 39.90, stock: 4, caract: [["Más", "uso que el plan gratis"], ["Modelos", "avanzados"]] },
+    { nombre: "Gemini",          cat: "ia",        tipo: "Acceso compartido", img: "gemini.png",          precio: 14.90, old: 19.90, stock: 5, caract: [["Modelos", "avanzados"], ["Más", "límites de uso"], ["Apps", "de Google"]] },
+    { nombre: "Spotify Premium x 3 Meses", cat: "otros",     tipo: "Acceso compartido", img: "spotify.png",         precio: 25.0,  old: 30.00,  stock: 3, caract: [["Sin", "anuncios"], ["Descargas", "sin conexión"], ["3", "meses"]] },
+    { nombre: "Canva Pro",       cat: "otros",     tipo: "Acceso compartido", img: "canva.png",           precio: 5.90,  old: 9.90,  stock: 5, caract: [["Plantillas", "premium"], ["Quitar", "fondos en 1 clic"], ["Brand", "Kit"]] },
+    { nombre: "CapCut Pro",      cat: "otros",     tipo: "Acceso compartido", img: "capcut.png",          precio: 8.90,  old: 14.90, stock: 3, caract: [["Efectos", "premium"], ["Sin", "marca de agua"], ["4K", "exportación"]] },
+    { nombre: "Microsoft 365",   cat: "otros",     tipo: "Acceso compartido", img: "microsoft-365.png",   precio: 12.90, old: 19.90, stock: 3, caract: [["1 TB", "en OneDrive"], ["Word, Excel", "y PowerPoint"]] },
+    { nombre: "HolaVPN", cat: "otros", tipo: "Acceso · 1 dispositivo", img: "hola-vpn.png", stock: 5,
+      planes: [{ meses: 1, precio: 14.90 }, { meses: 3, precio: 44.70 }, { meses: 6, precio: 89.40 }, { meses: 12, precio: 178.80 }],
+      caract: [["1", "dispositivo"], ["150+", "países"]] },
+    { nombre: "NordVPN", cat: "otros", tipo: "Acceso · 1 dispositivo", img: "nordvpn.png", stock: 5,
+      planes: [{ meses: 1, precio: 16.90 }, { meses: 3, precio: 50.70 }, { meses: 6, precio: 101.40 }, { meses: 12, precio: 202.80 }],
+      caract: [["1", "dispositivo"], ["VPN", "navegación privada"]] },
+    { nombre: "ESET Security Essential", cat: "otros", tipo: "Clave digital · 1 equipo", img: "eset.png", precio: 96.00, duracion: "1 año", stock: 5,
+      caract: [["1", "equipo"], ["12", "meses de vigencia"]] },
+    { nombre: "McAfee AntiVirus", cat: "otros", tipo: "Clave digital · 1 equipo", img: "mcafee.png", precio: 79.00, duracion: "1 año", stock: 5,
+      caract: [["1", "equipo"], ["12", "meses de vigencia"]] }
   ]
 };
 
@@ -104,10 +156,50 @@ window.NEXA = {
     }).join('');
   };
 
+  // Ayudantes de planes (periodos) y duración por producto
+  var N = window.NEXA;
+  N.planDe = function (p, meses) {
+    if (!p || !p.planes || !p.planes.length) return null;
+    meses = parseInt(meses, 10);
+    for (var i = 0; i < p.planes.length; i++) if (p.planes[i].meses === meses) return p.planes[i];
+    return p.planes[0];
+  };
+  N.precioDe = function (p, meses) { var pl = N.planDe(p, meses); return pl ? pl.precio : p.precio; };
+  N.oldDe = function (p, meses) { var pl = N.planDe(p, meses); return pl ? (pl.old || 0) : (p.old || 0); };
+  N.etiquetaMeses = function (m) { return m + (m === 1 ? ' mes' : ' meses'); };
+  N.duracionDe = function (p, meses) {
+    var pl = N.planDe(p, meses);
+    return pl ? N.etiquetaMeses(pl.meses) : (p.duracion || N.DURACION);
+  };
+
   window.NEXA.PRODUCTOS.forEach(function (p) {
+    if (p.planes && p.planes.length) { p.precio = p.planes[0].precio; if (p.planes[0].old) p.old = p.planes[0].old; }
     if (!p.id) {
       p.id = p.nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     }
   });
 })();
+
+/* ====== Respaldo de imágenes de productos ======
+   Si "logos/<img>" no carga, prueba otras extensiones (png, jpg, jpeg, webp) y variantes del nombre
+   (con o sin guion). Si ninguna existe, quita la imagen y queda el fondo de color. */
+window.nexaImg = function (img) {
+  var cola = img._cola;
+  if (!cola) {
+    var m = /^(.*\/)([^\/?#]+?)(\.[A-Za-z0-9]+)?$/.exec(img.getAttribute('src') || '');
+    if (!m) { img.remove(); return; }
+    var dir = m[1], base = m[2], orig = (m[3] || '').toLowerCase();
+    var nombres = [base, base.replace(/-/g, ''), base.replace(/-/g, '_')];
+    var exts = ['.png', '.jpg', '.jpeg', '.webp', '.PNG', '.JPG', '.JPEG', '.WEBP'];
+    cola = [];
+    nombres.forEach(function (n) {
+      exts.forEach(function (e) {
+        var u = dir + n + e;
+        if (u !== img.getAttribute('src') && cola.indexOf(u) === -1) cola.push(u);
+      });
+    });
+    img._cola = cola;
+  }
+  if (cola.length) img.src = cola.shift(); else img.remove();
+};

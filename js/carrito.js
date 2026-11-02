@@ -1,4 +1,4 @@
-/* Carrito de Nexa Store: se guarda en el navegador y se comparte entre las páginas */
+/* Carrito de Nexa Store Perú: se guarda en el navegador y se comparte entre las páginas */
 (function () {
   var C = window.NEXA;
   if (!C) return;
@@ -13,6 +13,12 @@
   function dinero(n) { return M + " " + n.toFixed(2); }
   function prod(id) { for (var i = 0; i < P.length; i++) if (P[i].id === id) return P[i]; return null; }
   function fondo(p) { return FONDOS[P.indexOf(p) % FONDOS.length]; }
+  // Una línea del carrito se identifica por producto + periodo (plan)
+  function clave(id, plan) { return id + (plan ? '|' + plan : ''); }
+  function buscar(key) { for (var i = 0; i < items.length; i++) if (clave(items[i].id, items[i].plan) === key) return items[i]; return null; }
+  function precioLinea(x) { return C.precioDe(prod(x.id), x.plan); }
+  function nombreLinea(x) { var p = prod(x.id); return p.nombre + (x.plan ? ' · ' + C.etiquetaMeses(x.plan) : ''); }
+  function enCarrito(id) { return items.reduce(function (s, x) { return s + (x.id === id ? x.qty : 0); }, 0); }
 
   // ---- Guardar y cargar ----
   function guardar() { try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) {} }
@@ -22,14 +28,14 @@
     items = [];
     (Array.isArray(crudo) ? crudo : []).forEach(function (x) {
       var p = x && prod(x.id);
-      if (p && p.stock > 0) items.push({ id: p.id, qty: Math.max(1, Math.min(parseInt(x.qty, 10) || 1, p.stock)) });
+      if (p && p.stock > 0) items.push({ id: p.id, plan: p.planes ? C.planDe(p, x.plan).meses : 0, qty: Math.max(1, Math.min(parseInt(x.qty, 10) || 1, p.stock)) });
     });
   }
 
   function cantidad() { return items.reduce(function (s, x) { return s + x.qty; }, 0); }
-  function total() { return items.reduce(function (s, x) { return s + prod(x.id).precio * x.qty; }, 0); }
+  function total() { return items.reduce(function (s, x) { return s + precioLinea(x) * x.qty; }, 0); }
   function ahorro() {
-    return items.reduce(function (s, x) { var p = prod(x.id); return s + (p.old ? (p.old - p.precio) * x.qty : 0); }, 0);
+    return items.reduce(function (s, x) { var o = C.oldDe(prod(x.id), x.plan); return s + (o ? (o - precioLinea(x)) * x.qty : 0); }, 0);
   }
 
   // ---- Estructura del panel ----
@@ -66,11 +72,11 @@
   function mensaje() {
     var lineas = items.map(function (x, i) {
       var p = prod(x.id);
-      return (i + 1) + ". " + p.nombre + " (" + p.tipo + ") x" + x.qty + " - " + dinero(p.precio * x.qty);
+      return (i + 1) + ". " + nombreLinea(x) + " (" + p.tipo + ") x" + x.qty + " - " + dinero(precioLinea(x) * x.qty);
     });
     var cod = foot.querySelector('#cd-codigo');
     cod = cod ? cod.value.trim() : '';
-    return "Hola, quiero hacer este pedido en Nexa Store:\n\n" + lineas.join("\n") +
+    return "Hola, quiero hacer este pedido en Nexa Store Perú:\n\n" + lineas.join("\n") +
       "\n\nTotal: " + dinero(total()) + (cod ? "\nCódigo de descuento: " + cod : "");
   }
   function actualizarEnlace() {
@@ -101,14 +107,14 @@
 
     body.innerHTML = '<ul class="cd-list">' + items.map(function (x) {
       var p = prod(x.id);
-      return '<li class="ci" data-id="' + p.id + '">' +
+      return '<li class="ci" data-key="' + clave(x.id, x.plan) + '">' +
         '<a class="ci-thumb" href="producto.html?p=' + encodeURIComponent(p.id) + '" style="background:linear-gradient(150deg,' + fondo(p) + ')"><img src="logos/' + p.img + '" alt="" onerror="this.remove()"></a>' +
-        '<div class="ci-info"><strong>' + p.nombre + '</strong><small>' + p.tipo + ' · ' + C.DURACION + '</small>' +
+        '<div class="ci-info"><strong>' + p.nombre + '</strong><small>' + p.tipo + ' · ' + C.duracionDe(p, x.plan) + '</small>' +
           '<div class="ci-row"><div class="ci-qty">' +
             '<button type="button" data-q="-1" aria-label="Quitar una unidad de ' + p.nombre + '">−</button>' +
             '<span aria-label="Cantidad">' + x.qty + '</span>' +
             '<button type="button" data-q="1" aria-label="Agregar una unidad de ' + p.nombre + '">+</button>' +
-          '</div><b>' + dinero(p.precio * x.qty) + '</b></div></div>' +
+          '</div><b>' + dinero(precioLinea(x) * x.qty) + '</b></div></div>' +
         '<button type="button" class="ci-del" data-del aria-label="Eliminar ' + p.nombre + ' del carrito">' + BASURA + '</button>' +
       '</li>';
     }).join('') + '</ul>';
@@ -144,32 +150,34 @@
   });
 
   // ---- Acciones ----
-  function agregar(id, qty) {
+  function agregar(id, qty, plan) {
     var p = prod(id);
     if (!p) return;
     if (p.stock <= 0) { aviso(p.nombre + ' está agotado por ahora', false); return; }
-    qty = qty || 1;
-    var x = items.filter(function (i) { return i.id === id; })[0];
-    if (x && x.qty >= p.stock) { aviso('Ya agregaste todo el stock disponible de ' + p.nombre, true); return; }
-    if (x) x.qty = Math.min(x.qty + qty, p.stock); else items.push({ id: id, qty: Math.min(qty, p.stock) });
+    plan = p.planes ? C.planDe(p, plan).meses : 0;
+    var libre = p.stock - enCarrito(id);
+    if (libre <= 0) { aviso('Ya agregaste todo el stock disponible de ' + p.nombre, true); return; }
+    qty = Math.min(qty || 1, libre);
+    var x = buscar(clave(id, plan));
+    if (x) x.qty += qty; else items.push({ id: id, plan: plan, qty: qty });
     guardar(); pintar();
-    aviso(p.nombre + ' agregado al carrito', true);
-    if (window.nexaTrack) window.nexaTrack('add_to_cart', { currency: 'PEN', value: p.precio, items: [{ item_id: p.id, item_name: p.nombre, item_category: p.cat, price: p.precio, quantity: 1 }] });
+    aviso(p.nombre + (plan ? ' (' + C.etiquetaMeses(plan) + ')' : '') + ' agregado al carrito', true);
+    if (window.nexaTrack) window.nexaTrack('add_to_cart', { currency: 'PEN', value: C.precioDe(p, plan), items: [{ item_id: p.id, item_name: p.nombre, item_category: p.cat, price: C.precioDe(p, plan), quantity: 1 }] });
     document.querySelectorAll('[data-carrito]').forEach(function (b) {
       b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump');
     });
   }
-  function cambiar(id, delta) {
-    var p = prod(id), x = items.filter(function (i) { return i.id === id; })[0];
+  function cambiar(key, delta) {
+    var x = buscar(key);
     if (!x) return;
-    var nueva = x.qty + delta;
-    if (nueva < 1) return quitar(id);
-    if (nueva > p.stock) { aviso('Solo hay ' + p.stock + ' disponibles de ' + p.nombre, false); return; }
+    var p = prod(x.id), nueva = x.qty + delta;
+    if (nueva < 1) return quitar(key);
+    if (delta > 0 && enCarrito(x.id) + delta > p.stock) { aviso('Solo hay ' + p.stock + ' disponibles de ' + p.nombre, false); return; }
     x.qty = nueva;
     guardar(); pintar();
   }
-  function quitar(id) {
-    items = items.filter(function (i) { return i.id !== id; });
+  function quitar(key) {
+    items = items.filter(function (i) { return clave(i.id, i.plan) !== key; });
     guardar(); pintar();
   }
   function vaciar() { items = []; guardar(); pintar(); }
@@ -200,8 +208,8 @@
     if (t.closest('.cd-close') || t.closest('[data-cerrar]')) return cerrar();
     var li = t.closest('.ci');
     var q = t.closest('[data-q]');
-    if (q && li) return cambiar(li.dataset.id, parseInt(q.dataset.q, 10));
-    if (t.closest('[data-del]') && li) return quitar(li.dataset.id);
+    if (q && li) return cambiar(li.dataset.key, parseInt(q.dataset.q, 10));
+    if (t.closest('[data-del]') && li) return quitar(li.dataset.key);
     if (t.closest('[data-vaciar]')) return vaciar();
     if (t.closest('#cd-pagar')) {
       var cd = foot.querySelector('#cd-codigo');
@@ -230,7 +238,7 @@
   pintar();
   window.CARRITO = {
     add: agregar, open: abrir, close: cerrar, count: cantidad,
-    items: function () { return items.map(function (x) { return { id: x.id, qty: x.qty }; }); },
+    items: function () { return items.map(function (x) { return { id: x.id, plan: x.plan, qty: x.qty }; }); },
     onChange: function (fn) { oyentes.push(fn); }
   };
 })();

@@ -41,7 +41,7 @@
   P.forEach(function (p, i) { if (p.id === id) idx = i; });
 
   if (idx < 0) {
-    document.title = "Producto no encontrado – Nexa Store";
+    document.title = "Producto no encontrado – Nexa Store Perú";
     cont.innerHTML = '<section class="pd-missing"><h1>No encontramos ese producto</h1>' +
       '<p>Puede que el enlace esté incompleto o que ya no esté disponible.</p>' +
       '<a class="btn primary big" href="index.html#catalogo">Volver al catálogo</a></section>';
@@ -51,20 +51,53 @@
   var p = P[idx];
   var fondo = FONDOS[idx % FONDOS.length];
   var esPerfil = /perfil/i.test(p.tipo);
-  var descuento = p.old ? Math.round((1 - p.precio / p.old) * 100) : 0;
-  var ahorro = p.old ? p.old - p.precio : 0;
+  var esCompleta = /cuenta completa/i.test(p.tipo);
+  var esClave = /clave/i.test(p.tipo);
+  var planes = p.planes || null;
+  var planSel = planes ? planes[0] : null;
+  function precioSel() { return planSel ? planSel.precio : p.precio; }
+  function oldSel() { return planSel ? (planSel.old || 0) : (p.old || 0); }
+  function durSel() { return planSel ? C.etiquetaMeses(planSel.meses) : (p.duracion || C.DURACION); }
+  function periodoTxt() { return (esClave ? 'Licencia' : esCompleta ? 'Cuenta completa' : esPerfil ? 'Perfil' : 'Acceso') + ' · ' + durSel(); }
+  function totalHtml() {
+    var pr = precioSel(), od = oldSel(), ah = od ? od - pr : 0, ds = od ? Math.round((1 - pr / od) * 100) : 0;
+    return '<div><span class="tot-l">Total del producto</span>' + (ah > 0 ? '<span class="save">Ahorras ' + dinero(ah) + '</span>' : '') + '</div>' +
+      '<div class="tot-r"><span class="tot-v">' + dinero(pr) + '</span>' + (od ? '<span class="tot-old">' + dinero(od) + '</span>' : '') +
+      (ds > 0 ? '<span class="off">-' + ds + '%</span>' : '') + '</div>';
+  }
+  var planesHtml = planes
+    ? '<div class="bc-plans" role="group" aria-label="Elige tu periodo">' + planes.map(function (pl) {
+        var ref = planes[0].precio * pl.meses, pct = ref > pl.precio ? Math.round((1 - pl.precio / ref) * 100) : 0;
+        return '<button type="button" class="bc-plan" data-plan="' + pl.meses + '" aria-pressed="' + (pl === planSel) + '"><strong>' + C.etiquetaMeses(pl.meses) + '</strong><span>' + dinero(pl.precio) + '</span>' + (pct > 0 ? '<em>-' + pct + '%</em>' : '') + '</button>';
+      }).join('') + '</div>'
+    : '';
   var agotado = p.stock <= 0;
   var bajo = !agotado && p.stock <= C.STOCK_BAJO;
 
-  document.title = p.nombre + " – Nexa Store";
+  document.title = p.nombre + " – Nexa Store Perú";
   if (window.nexaTrack) window.nexaTrack('view_item', { currency: 'PEN', value: p.precio, items: [{ item_id: p.id, item_name: p.nombre, item_category: p.cat, price: p.precio, quantity: 1 }] });
 
-  var intro = esPerfil
-    ? "Perfil asignado dentro de una cuenta compartida administrada por Nexa Store."
-    : "Acceso a " + p.nombre + " administrado por Nexa Store.";
-  var descripcion = esPerfil
-    ? "Recibes un perfil asignado dentro de una cuenta compartida administrada por Nexa Store. Te acompañamos por WhatsApp con las indicaciones de uso durante todo el periodo contratado."
-    : "Recibes acceso a " + p.nombre + " mediante una cuenta compartida administrada por Nexa Store. Te acompañamos por WhatsApp con las indicaciones de uso durante todo el periodo contratado.";
+  var intro = esClave
+    ? "Clave digital de activación, lista para usar."
+    : esCompleta
+    ? "Cuenta completa de uso exclusivo para ti, con todos sus perfiles."
+    : esPerfil
+    ? "Perfil asignado dentro de una cuenta compartida administrada por Nexa Store Perú."
+    : "Acceso a " + p.nombre + " administrado por Nexa Store Perú.";
+  var descripcion = esClave
+    ? "Recibes una clave digital para activar " + p.nombre + " en tu equipo. Te enviamos la clave y las indicaciones de activación por WhatsApp."
+    : esCompleta
+    ? "Recibes una cuenta completa de " + p.nombre + ", sin compartirla con otros clientes, para que uses los perfiles que necesites. Te acompañamos por WhatsApp con las indicaciones de uso durante todo el periodo contratado."
+    : esPerfil
+    ? "Recibes un perfil asignado dentro de una cuenta compartida administrada por Nexa Store Perú. Te acompañamos por WhatsApp con las indicaciones de uso durante todo el periodo contratado."
+    : "Recibes acceso a " + p.nombre + " mediante una cuenta compartida administrada por Nexa Store Perú. Te acompañamos por WhatsApp con las indicaciones de uso durante todo el periodo contratado.";
+
+  // ---- Características (opcional, vienen de "caract" en config.js) ----
+  var statsHtml = (p.caract && p.caract.length)
+    ? '<div class="pd-stats" aria-label="Características">' + p.caract.map(function (c) {
+        return '<div><b>' + c[0] + '</b><span>' + c[1] + '</span></div>';
+      }).join('') + '</div>'
+    : '';
 
   // ---- Productos relacionados ----
   var rel = P.filter(function (x) { return x !== p && x.cat === p.cat; });
@@ -91,7 +124,7 @@
         '<ul class="pd-feats">' +
           '<li><span>' + ico('user') + '</span>' + p.tipo + '</li>' +
           '<li><span>' + ico('bolt') + '</span>' + C.ENTREGA + '</li>' +
-          '<li><span>' + ico('clock') + '</span>' + C.DURACION + '</li>' +
+          '<li><span>' + ico('clock') + '</span><em id="hero-dur" class="dur">' + durSel() + '</em></li>' +
           '<li><span>' + ico('headset') + '</span>Soporte por WhatsApp</li>' +
         '</ul>' +
       '</div>' +
@@ -114,8 +147,9 @@
         '<span class="kick">Información del servicio</span>' +
         '<h2>' + p.nombre + ' · ' + p.tipo + '</h2>' +
         '<p>' + descripcion + '</p>' +
+        statsHtml +
         '<div class="pd-cards">' +
-          '<div><span>' + ico('user') + '</span><strong>' + (esPerfil ? 'Perfil asignado' : 'Acceso incluido') + '</strong><p>' + (esPerfil ? 'Obtienes un perfil preparado para tu uso personal dentro de la cuenta.' : 'Obtienes acceso al servicio listo para usar, con tus indicaciones.') + '</p></div>' +
+          '<div><span>' + ico('user') + '</span><strong>' + (esClave ? 'Clave digital' : esCompleta ? 'Cuenta completa' : esPerfil ? 'Perfil asignado' : 'Acceso incluido') + '</strong><p>' + (esClave ? 'Recibes una clave lista para activar en tu equipo.' : esCompleta ? 'La cuenta es solo para ti: no se vende a otros clientes durante tu periodo.' : esPerfil ? 'Obtienes un perfil preparado para tu uso personal dentro de la cuenta.' : 'Obtienes acceso al servicio listo para usar, con tus indicaciones.') + '</p></div>' +
           '<div><span>' + ico('smile') + '</span><strong>Fácil de usar</strong><p>Te enviamos los datos y las indicaciones para que empieces a usarlo sin complicaciones.</p></div>' +
           '<div><span>' + ico('headset') + '</span><strong>Soporte por WhatsApp</strong><p>Si tienes algún inconveniente durante tu servicio, escríbenos y te ayudamos.</p></div>' +
         '</div>' +
@@ -124,9 +158,9 @@
         '<span class="kick">Antes de comprar</span>' +
         '<h2>Información importante</h2>' +
         '<ul class="pd-list">' +
-          '<li>' + ico('check', 18) + '<span><strong>Uso personal.</strong> El acceso es solo para ti; no lo compartas con otras personas.</span></li>' +
-          '<li>' + ico('check', 18) + '<span><strong>No modifiques la cuenta.</strong> No cambies correo, contraseña, PIN ni la configuración del acceso.</span></li>' +
-          '<li>' + ico('check', 18) + '<span><strong>Duración.</strong> El servicio incluye ' + C.DURACION + '.</span></li>' +
+          '<li>' + ico('check', 18) + '<span><strong>Uso personal.</strong> ' + (esClave ? 'La clave es para un solo equipo; no la compartas ni la revendas.' : esCompleta ? 'Puedes usar los perfiles de la cuenta, pero no la compartas ni la revendas.' : 'El acceso es solo para ti; no lo compartas con otras personas.') + '</span></li>' +
+          (esClave ? '<li>' + ico('check', 18) + '<span><strong>Activación.</strong> Activa la clave cuando vayas a usarla; te enviamos las indicaciones.</span></li>' : '<li>' + ico('check', 18) + '<span><strong>No modifiques la cuenta.</strong> No cambies correo, contraseña, PIN ni la configuración del acceso.</span></li>') +
+          '<li>' + ico('check', 18) + '<span><strong>Duración.</strong> El servicio incluye <span id="info-dur">' + durSel() + '</span>.</span></li>' +
           '<li>' + ico('check', 18) + '<span><strong>Soporte.</strong> Ante cualquier incidencia, escríbenos por WhatsApp antes de hacer cambios.</span></li>' +
           '<li>' + ico('check', 18) + '<span><strong>Disponibilidad.</strong> El stock puede variar; confirmamos tu pedido por WhatsApp.</span></li>' +
         '</ul>' +
@@ -139,25 +173,20 @@
         '<div class="bc-logo" style="background:linear-gradient(150deg,' + fondo + ')"><img src="logos/' + p.img + '" alt="" onerror="this.remove()"></div>' +
         '<div><div class="bc-name">' + p.nombre + '</div><div class="bc-sub">' + CATS[p.cat] + ' · ' + p.tipo + '</div></div>' +
       '</div>' +
-      '<div class="bc-label">Tu plan</div>' +
-      '<div class="bc-period"><span>' + ico('cal') + '</span><div><small>Periodo elegido</small><strong>' + (esPerfil ? 'Perfil' : 'Acceso') + ' · ' + C.DURACION + '</strong></div></div>' +
+      '<div class="bc-label">Tu plan</div>' + planesHtml +
+      '<div class="bc-period"><span>' + ico('cal') + '</span><div><small>Periodo elegido</small><strong id="bc-per">' + periodoTxt() + '</strong></div></div>' +
       (agotado ? '' : '<details class="bc-code">' +
         '<summary><span>' + ico('ticket', 18) + 'Código de descuento o regalo</span>' + ico('chev', 18) + '</summary>' +
         '<input type="text" id="codigo" placeholder="Escribe tu código" autocomplete="off" aria-label="Código de descuento o regalo">' +
         '<small>Lo validamos por WhatsApp al confirmar tu pedido.</small>' +
       '</details>') +
-      '<div class="bc-total">' +
-        '<div><span class="tot-l">Total del producto</span>' + (ahorro > 0 ? '<span class="save">Ahorras ' + dinero(ahorro) + '</span>' : '') + '</div>' +
-        '<div class="tot-r"><span class="tot-v">' + dinero(p.precio) + '</span>' +
-          (p.old ? '<span class="tot-old">' + dinero(p.old) + '</span>' : '') +
-          (descuento > 0 ? '<span class="off">-' + descuento + '%</span>' : '') + '</div>' +
-      '</div>' +
-      '<div class="stock' + (agotado ? ' out' : bajo ? ' low' : '') + '"><i></i>' + (agotado ? 'Agotado por ahora' : bajo ? 'Quedan solo ' + p.stock + ' accesos' : p.stock + ' accesos disponibles') + '</div>' +
+      '<div class="bc-total" id="bc-total">' + totalHtml() + '</div>' +
+      '<div class="stock' + (agotado ? ' out' : bajo ? ' low' : '') + '"><i></i>' + (agotado ? 'Agotado por ahora' : bajo ? 'Quedan solo ' + p.stock + (esCompleta ? ' cuentas' : ' accesos') : p.stock + (esCompleta ? ' cuentas disponibles' : ' accesos disponibles')) + '</div>' +
       (agotado
         ? '<div class="bc-actions"><a id="avisar" class="btn primary big" href="' + wa('Hola, quiero que me avisen cuando haya stock de ' + p.nombre + ' (' + p.tipo + ').') + '" target="_blank" rel="noopener"><img class="wa-ico" src="logos/icon-whatsapp.png" alt="" width="24" height="24" onerror="this.remove()">Avisarme cuando haya stock</a>' +
           '<button type="button" id="compartir" class="bc-share" aria-label="Compartir este producto">' + ico('share', 20) + '</button></div>' +
           '<p class="bc-note">Escríbenos y te avisamos cuando vuelva a haber stock.</p>'
-        :       '<a id="pagar" class="btn primary big bc-main" href="pago.html?p=' + encodeURIComponent(p.id) + '">' + ico('bolt', 20) + 'Pagar ahora</a>' +
+        :       '<a id="pagar" class="btn primary big bc-main" href="pago.html?p=' + encodeURIComponent(p.id) + (planSel ? '&plan=' + planSel.meses : '') + '">' + ico('bolt', 20) + 'Pagar ahora</a>' +
       '<button type="button" id="agregar" class="btn ghost bc-add">' + ico('bag', 20) + 'Agregar al carrito</button>' +
       '<div class="bc-actions">' +
         '<a id="comprar" class="btn ghost big" href="#" target="_blank" rel="noopener"><img class="wa-ico" src="logos/icon-whatsapp-blanco.png" alt="" width="24" height="24" onerror="this.remove()">Consultar por WhatsApp</a>' +
@@ -172,17 +201,36 @@
     '<section class="pd-rel"><h2>También te puede interesar</h2><div class="rel-grid">' + relHtml + '</div></section>' +
     '<div class="toast" id="toast" role="status" aria-live="polite"></div>';
 
+  var alCambiarPlan = function () {};
+  if (planes) {
+    cont.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-plan]');
+      if (!b) return;
+      planSel = planes.filter(function (pl) { return pl.meses === parseInt(b.dataset.plan, 10); })[0] || planSel;
+      cont.querySelectorAll('[data-plan]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      $('bc-total').innerHTML = totalHtml();
+      $('bc-per').textContent = periodoTxt();
+      var hd = $('hero-dur'); if (hd) hd.textContent = durSel();
+      var inf = $('info-dur'); if (inf) inf.textContent = durSel();
+      alCambiarPlan();
+    });
+  }
+
   if (!agotado) {
     // ---- Comprar: el mensaje incluye el código si lo escribe ----
     var comprar = $('comprar'), codigo = $('codigo');
     function actualizar() {
       var cod = codigo.value.trim();
-      var msg = "Hola, tengo una consulta sobre " + p.nombre + " (" + p.tipo + ") de " + dinero(p.precio) + "." +
+      var msg = "Hola, tengo una consulta sobre " + p.nombre + (planSel ? " – " + C.etiquetaMeses(planSel.meses) : "") + " (" + p.tipo + ") de " + dinero(precioSel()) + "." +
         (cod ? " Código de descuento: " + cod + "." : "");
       comprar.href = wa(msg);
     }
     codigo.addEventListener('input', actualizar);
     actualizar();
+    alCambiarPlan = function () {
+      $('pagar').href = 'pago.html?p=' + encodeURIComponent(p.id) + (planSel ? '&plan=' + planSel.meses : '');
+      actualizar();
+    };
 
     // ---- Pagar ahora: lleva el código escrito a la página de pago ----
     $('pagar').addEventListener('click', function () {
@@ -191,7 +239,7 @@
 
     // ---- Agregar al carrito ----
     $('agregar').addEventListener('click', function () {
-      if (window.CARRITO) window.CARRITO.add(p.id);
+      if (window.CARRITO) window.CARRITO.add(p.id, 1, planSel ? planSel.meses : 0);
     });
   }
 
@@ -225,7 +273,7 @@
   $('compartir').addEventListener('click', function () {
     var url = location.href;
     if (navigator.share) {
-      navigator.share({ title: p.nombre + " – Nexa Store", url: url }).catch(function () {});
+      navigator.share({ title: p.nombre + " – Nexa Store Perú", url: url }).catch(function () {});
     } else if (navigator.clipboard) {
       navigator.clipboard.writeText(url).then(function () { toast('Enlace copiado'); }, function () { toast('No se pudo copiar el enlace'); });
     } else {

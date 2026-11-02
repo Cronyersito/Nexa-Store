@@ -1,4 +1,4 @@
-/* Página de pago de Nexa Store */
+/* Página de pago de Nexa Store Perú */
 (function () {
   var C = window.NEXA;
   var cont = document.getElementById('pago');
@@ -7,7 +7,9 @@
   var P = C.PRODUCTOS, M = C.MONEDA, PG = C.PAGO || {};
   var METODOS = C.METODOS_PAGO || [];
   var FONDOS = ["#2dd4f5,#1a3a7a", "#a56bff,#2a1670", "#7fe3f7,#2b5fb8", "#c79bff,#4a1f9a", "#5cc8ff,#3b2b9a", "#8a6bff,#1d4f9c"];
-  var soloId = new URLSearchParams(location.search).get('p');   // pago directo de un solo producto
+  var qs = new URLSearchParams(location.search);
+  var soloId = qs.get('p');   // pago directo de un solo producto
+  var soloPlan = qs.get('plan');
   var metodoId = METODOS.length ? METODOS[0].id : null;
   var toastEl, toastT;
   var trackeado = false;
@@ -18,13 +20,14 @@
     var ls = lineas();
     var datos = {
       currency: 'PEN', value: Number(total(ls).toFixed(2)),
-      items: ls.map(function (x) { var p = prod(x.id); return { item_id: p.id, item_name: p.nombre, item_category: p.cat, price: p.precio, quantity: x.qty }; })
+      items: ls.map(function (x) { var p = prod(x.id); return { item_id: p.id, item_name: p.nombre, item_category: p.cat, price: C.precioDe(p, x.plan), quantity: x.qty }; })
     };
     for (var k in (extra || {})) datos[k] = extra[k];
     window.nexaTrack(ev, datos);
   }
 
   function dinero(n) { return M + " " + n.toFixed(2); }
+  function nombreLinea(x) { var p = prod(x.id); return p.nombre + (x.plan ? ' · ' + C.etiquetaMeses(x.plan) : ''); }
   function prod(id) { for (var i = 0; i < P.length; i++) if (P[i].id === id) return P[i]; return null; }
   function wa(texto) { return "https://wa.me/" + C.WHATSAPP + "?text=" + encodeURIComponent(texto); }
   function ico(path, size) {
@@ -32,20 +35,20 @@
   }
   var COPIAR = ico('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>', 16);
 
-  document.title = "Pago – Nexa Store";
+  document.title = "Pago – Nexa Store Perú";
 
   // ---- Datos del pedido ----
   function lineas() {
-    if (soloId) { var p = prod(soloId); return p && p.stock > 0 ? [{ id: p.id, qty: 1 }] : []; }
+    if (soloId) { var p = prod(soloId); return p && p.stock > 0 ? [{ id: p.id, plan: p.planes ? C.planDe(p, soloPlan).meses : 0, qty: 1 }] : []; }
     return window.CARRITO ? window.CARRITO.items() : [];
   }
-  function total(ls) { return ls.reduce(function (s, x) { return s + prod(x.id).precio * x.qty; }, 0); }
+  function total(ls) { return ls.reduce(function (s, x) { return s + C.precioDe(prod(x.id), x.plan) * x.qty; }, 0); }
   function ahorro(ls) {
-    return ls.reduce(function (s, x) { var p = prod(x.id); return s + (p.old ? (p.old - p.precio) * x.qty : 0); }, 0);
+    return ls.reduce(function (s, x) { var o = C.oldDe(prod(x.id), x.plan); return s + (o ? (o - C.precioDe(prod(x.id), x.plan)) * x.qty : 0); }, 0);
   }
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
   function codigoPedido(ls) {
-    var firma = ls.map(function (x) { return x.id + ':' + x.qty; }).join('|');
+    var firma = ls.map(function (x) { return x.id + ':' + (x.plan || 0) + ':' + x.qty; }).join('|');
     try {
       var g = JSON.parse(sessionStorage.getItem('nexa_pedido') || 'null');
       if (g && g.firma === firma) return g.codigo;
@@ -133,7 +136,7 @@
   function mensajeComprobante(m, ls) {
     var lin = ls.map(function (x, i) {
       var p = prod(x.id);
-      return (i + 1) + ". " + p.nombre + " (" + p.tipo + ") x" + x.qty + " - " + dinero(p.precio * x.qty);
+      return (i + 1) + ". " + nombreLinea(x) + " (" + p.tipo + ") x" + x.qty + " - " + dinero(C.precioDe(p, x.plan) * x.qty);
     }).join("\n");
     var d = codigoDescuento();
     var ahora = new Date();
@@ -156,18 +159,17 @@
   var ICO_ARCH = ico('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>', 22);
 
   function upHtml() {
-    if (!subidaActiva()) return '';
     var input = '<input type="file" id="pg-file" accept="image/*,application/pdf" hidden>';
     if (up.estado === 'idle') {
       return input + '<button type="button" class="pg-pick" data-pick>' + ICO_SUBIR + 'Subir captura de mi pago</button>' +
-        '<small class="pg-hint">Imagen o PDF · máximo ' + MAX_MB + ' MB</small>';
+        '<small class="pg-hint">Imagen o PDF · máximo ' + MAX_MB + ' MB' + (subidaActiva() ? '' : ' · luego la adjuntas en WhatsApp') + '</small>';
     }
     var thumb = up.vista ? '<img src="' + up.vista + '" alt="">' : ICO_ARCH;
     var estado;
     if (up.estado === 'subiendo') {
       estado = '<span class="st">Subiendo… ' + up.pct + '%</span><div class="bar"><i style="width:' + up.pct + '%"></i></div>';
     } else if (up.estado === 'ok') {
-      estado = '<span class="st ok">✓ Comprobante subido</span>';
+      estado = '<span class="st ok">' + (subidaActiva() ? '✓ Comprobante subido' : '✓ Captura lista. Adjúntala en WhatsApp') + '</span>';
     } else {
       estado = '<span class="st err">' + esc(up.error) + '</span>';
     }
@@ -209,6 +211,13 @@
     var mio = up = { estado: 'subiendo', codigo: cod, nombre: file.name, url: '', pct: 0, archivo: file,
       vista: /^image\//.test(file.type) ? URL.createObjectURL(file) : '', error: '' };
     var refrescar = function () { if (up === mio) { pintarUp(); actualizarEnvio(); } };
+    if (!subidaActiva()) {
+      // Sin Cloudinary: no se sube nada; basta con elegir la captura para activar el botón
+      mio.estado = 'ok';
+      track('comprobante_seleccionado', {});
+      refrescar();
+      return;
+    }
     refrescar();
 
     var fd = new FormData();
@@ -217,7 +226,7 @@
     var carpeta = carpetaDe(ls);
     if (carpeta) fd.append('folder', carpeta);
     fd.append('tags', cod);
-    fd.append('context', 'pedido=' + cod + '|metodo=' + metodo(metodoId).nombre + '|total=' + total(ls).toFixed(2) + '|productos=' + ls.map(function (x) { return x.id + 'x' + x.qty; }).join('+'));
+    fd.append('context', 'pedido=' + cod + '|metodo=' + metodo(metodoId).nombre + '|total=' + total(ls).toFixed(2) + '|productos=' + ls.map(function (x) { return x.id + (x.plan ? '-' + x.plan + 'm' : '') + 'x' + x.qty; }).join('+'));
 
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + encodeURIComponent(CL.cloudName) + '/auto/upload');
@@ -261,8 +270,8 @@
 
     var items = ls.map(function (x) {
       var p = prod(x.id), k = P.indexOf(p);
-      return '<li class="ps-item"><span class="ps-thumb" style="background:linear-gradient(150deg,' + FONDOS[k % FONDOS.length] + ')"><img src="logos/' + p.img + '" alt="" onerror="this.remove()"></span>' +
-        '<span class="ps-info"><strong>' + p.nombre + '</strong><small>' + p.tipo + ' · x' + x.qty + '</small></span><b>' + dinero(p.precio * x.qty) + '</b></li>';
+      return '<li class="ps-item"><span class="ps-thumb" style="background:linear-gradient(150deg,' + FONDOS[k % FONDOS.length] + ')"><img src="logos/' + p.img + '" alt="" onerror="nexaImg(this)"></span>' +
+        '<span class="ps-info"><strong>' + p.nombre + '</strong><small>' + p.tipo + ' · ' + C.duracionDe(p, x.plan) + ' · x' + x.qty + '</small></span><b>' + dinero(C.precioDe(p, x.plan) * x.qty) + '</b></li>';
     }).join('');
 
     cont.innerHTML =
@@ -286,7 +295,7 @@
           (soloId ? '' : '<button type="button" class="ps-edit" data-editar>Editar carrito</button>') +
         '</div>' +
           '<div class="pg-card pg-send-card"><h3 class="pg-t"><b>3</b>Envía tu comprobante</h3>' +
-            '<p class="pg-intro">' + (subidaActiva() ? 'Sube la captura de tu pago y luego envíala por WhatsApp. Confirmamos y te enviamos tu acceso.' : 'Cuando termines, toca el botón y adjunta la captura de tu pago. Confirmamos y te enviamos tu acceso.') + '</p>' +
+            '<p class="pg-intro">' + (subidaActiva() ? 'Sube la captura de tu pago y luego envíala por WhatsApp. Confirmamos y te enviamos tu acceso.' : 'Selecciona la captura de tu pago para activar el botón. Luego adjúntala en el chat de WhatsApp. Confirmamos y te enviamos tu acceso.') + '</p>' +
             '<div id="pg-up">' + upHtml() + '</div>' +
             '<a id="pg-enviar" class="btn primary big pg-send" href="#" target="_blank" rel="noopener"><img class="wa-ico" src="logos/icon-whatsapp.png" alt="" width="24" height="24" onerror="this.remove()">Ya pagué, enviar comprobante</a></div>' +
         '</aside>' +
@@ -298,9 +307,16 @@
     if (!trackeado) { trackeado = true; track('begin_checkout', { payment_type: m.nombre }); }
   }
 
+  // El botón de WhatsApp solo funciona cuando ya hay una captura (subida a Cloudinary, o seleccionada si no está configurado)
+  function listoParaEnviar() { return up.estado === 'ok'; }
   function actualizarEnvio() {
     var a = document.getElementById('pg-enviar');
-    if (a) a.href = wa(mensajeComprobante(metodo(metodoId), lineas()));
+    if (!a) return;
+    var ok = listoParaEnviar();
+    a.href = ok ? wa(mensajeComprobante(metodo(metodoId), lineas())) : '#';
+    if (ok) a.target = '_blank'; else a.removeAttribute('target');
+    a.setAttribute('aria-disabled', String(!ok));
+    a.classList.toggle('is-off', !ok);
   }
 
   // ---- Avisos y copiar ----
@@ -329,7 +345,15 @@
   }
 
   cont.addEventListener('click', function (e) {
-    if (e.target.closest('#pg-enviar')) track('generate_lead', { payment_type: metodo(metodoId).nombre });
+    if (e.target.closest('#pg-enviar')) {
+      if (!listoParaEnviar()) {
+        e.preventDefault();
+        aviso(up.estado === 'subiendo' ? 'Espera a que termine de subir tu captura' : 'Primero sube la captura de tu pago');
+        if (up.estado === 'idle') { var fi0 = document.getElementById('pg-file'); if (fi0) fi0.click(); }
+        return;
+      }
+      track('generate_lead', { payment_type: metodo(metodoId).nombre });
+    }
     var cp = e.target.closest('[data-copy]');
     if (cp) return copiar(cp.dataset.copy, cp);
     var mb = e.target.closest('[data-m]');

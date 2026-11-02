@@ -1,4 +1,4 @@
-/* Extras de Nexa Store: modo claro/oscuro y analítica de visitas.
+/* Extras de Nexa Store Perú: modo claro/oscuro y analítica de visitas.
    Se carga en el <head> de cada página, DESPUÉS de config.js. */
 (function () {
   var raiz = document.documentElement;
