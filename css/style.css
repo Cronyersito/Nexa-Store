@@ -966,7 +966,7 @@ html[data-tema] .pd-hero .crumbs a:hover{color:#fff!important}
 html[data-tema] .pd-hero .pd-feats span{color:#5ce1f7;background:linear-gradient(135deg,rgba(255,255,255,.26),rgba(255,255,255,.1))}
 
 
-/* ===== AJUSTES PARA CELULAR v3 (menos elementos, más aire) ===== */
+/* ===== AJUSTES PARA CELULAR v4 (menos elementos, más aire) ===== */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 
 /* Tablet y celular: la cabecera nunca se desborda */
@@ -1002,7 +1002,14 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .hero p{font-size:16px;line-height:1.55;max-width:none}
   .hero .cta{flex-direction:column;align-items:stretch;gap:10px;margin-top:4px}
   .hero .cta .btn{width:100%;justify-content:center;min-height:50px;font-size:16px;padding:0 20px}
-  .gallery{display:none}
+  /* Tarjetas flotantes: se mantienen, más pequeñas y dentro de la pantalla */
+  .gallery{display:grid;flex:1 1 100%;width:100%;max-width:420px;margin:12px auto 0;gap:10px;padding:8px 0 48px;transform:rotate(-4deg)}
+  .g-col{gap:10px}
+  .g-col.b{margin-top:36px}
+  .g-card{border-radius:14px;box-shadow:0 14px 28px rgba(0,0,0,.45)}
+  .g-card:hover{scale:1}
+  @keyframes riseA{from{transform:translateY(4px)}to{transform:translateY(-14px)}}
+  @keyframes riseB{from{transform:translateY(-4px)}to{transform:translateY(14px)}}
 
   /* Secciones */
   section.block{padding:0 20px 44px;gap:18px;scroll-margin-top:84px}
