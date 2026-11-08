@@ -42,6 +42,7 @@
 
   if (idx < 0) {
     document.title = "Producto no encontrado – Nexa Store Perú";
+    var rb = document.createElement('meta'); rb.name = 'robots'; rb.content = 'noindex'; document.head.appendChild(rb);
     cont.innerHTML = '<section class="pd-missing"><h1>No encontramos ese producto</h1>' +
       '<p>Puede que el enlace esté incompleto o que ya no esté disponible.</p>' +
       '<a class="btn primary big" href="index.html#catalogo">Volver al catálogo</a></section>';
@@ -75,6 +76,32 @@
   var bajo = !agotado && p.stock <= C.STOCK_BAJO;
 
   document.title = p.nombre + " – Nexa Store Perú";
+
+  // ---- SEO: cada producto con su dirección canónica, descripción y datos estructurados ----
+  var sitio = (C.SITIO || location.origin).replace(/\/$/, '');
+  var canon = sitio + '/producto.html?p=' + encodeURIComponent(p.id);
+  var descSeo = p.nombre + ' (' + p.tipo + ') ' + (planes ? 'desde ' : 'a ') + dinero(p.precio) + ' en Nexa Store Perú. ' +
+    (agotado ? 'Agotado por ahora. ' : '') + 'Paga con Yape o Plin y recibe tu acceso por WhatsApp.';
+  function metaSet(sel, attr, val) { var m = document.head.querySelector(sel); if (m) m.setAttribute(attr, val); }
+  metaSet('link[rel="canonical"]', 'href', canon);
+  metaSet('meta[name="description"]', 'content', descSeo);
+  metaSet('meta[property="og:title"]', 'content', p.nombre + ' – Nexa Store Perú');
+  metaSet('meta[property="og:description"]', 'content', descSeo);
+  metaSet('meta[property="og:url"]', 'content', canon);
+  metaSet('meta[name="twitter:title"]', 'content', p.nombre + ' – Nexa Store Perú');
+  metaSet('meta[name="twitter:description"]', 'content', descSeo);
+  try {
+    var ld = document.createElement('script');
+    ld.type = 'application/ld+json';
+    ld.textContent = JSON.stringify({
+      '@context': 'https://schema.org', '@type': 'Product', name: p.nombre, description: descSeo,
+      image: sitio + '/logos/' + p.img, category: CATS[p.cat], url: canon,
+      offers: { '@type': 'Offer', priceCurrency: 'PEN', price: p.precio.toFixed(2), url: canon,
+        availability: agotado ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+        seller: { '@type': 'Organization', name: 'Nexa Store Perú' } }
+    });
+    document.head.appendChild(ld);
+  } catch (e) {}
   if (window.nexaTrack) window.nexaTrack('view_item', { currency: 'PEN', value: p.precio, items: [{ item_id: p.id, item_name: p.nombre, item_category: p.cat, price: p.precio, quantity: 1 }] });
 
   var intro = esClave
@@ -133,8 +160,8 @@
     // Cómo comprar
     '<section class="pd-steps" aria-label="Cómo comprar">' +
       '<div><b>1</b><span><strong>Elige tu producto</strong><small>Revisa el detalle y el precio.</small></span></div>' +
-      '<div><b>2</b><span><strong>Escríbenos y paga</strong><small>Te indicamos cómo pagar.</small></span></div>' +
-      '<div><b>3</b><span><strong>Recibe tu acceso</strong><small>Te enviamos tus datos.</small></span></div>' +
+      '<div><b>2</b><span><strong>Paga y envía tu comprobante</strong><small>Con Yape o Plin, por WhatsApp.</small></span></div>' +
+      '<div><b>3</b><span><strong>Recibe tu acceso</strong><small>Confirmamos tu pago y te enviamos tus datos.</small></span></div>' +
     '</section>' +
 
     // Pestañas
@@ -192,8 +219,8 @@
         '<a id="comprar" class="btn ghost big" href="#" target="_blank" rel="noopener"><img class="wa-ico" src="logos/icon-whatsapp-blanco.png" alt="" width="24" height="24" onerror="this.remove()">Consultar por WhatsApp</a>' +
         '<button type="button" id="compartir" class="bc-share" aria-label="Compartir este producto">' + ico('share', 20) + '</button>' +
       '</div>' +
-      '<p class="bc-note">Te respondemos para coordinar el pago y la entrega de tu acceso.</p>') +
-      (C.chipsPago && C.chipsPago() ? '<div class="bc-pay"><span class="bc-label">Medios de pago</span><div class="pay-list">' + C.chipsPago() + '</div><small>Te indicamos los datos de pago por WhatsApp.</small></div>' : '') +
+      '<p class="bc-note">¿Tienes dudas? Escríbenos antes de pagar y te ayudamos.</p>') +
+      (C.chipsPago && C.chipsPago() ? '<div class="bc-pay"><span class="bc-label">Medios de pago</span><div class="pay-list">' + C.chipsPago() + '</div><small>Verás los datos de pago al pulsar «Pagar ahora».</small></div>' : '') +
     '</aside>' +
 
     '</div>' +

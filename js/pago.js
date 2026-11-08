@@ -47,6 +47,14 @@
     return ls.reduce(function (s, x) { var o = C.oldDe(prod(x.id), x.plan); return s + (o ? (o - C.precioDe(prod(x.id), x.plan)) * x.qty : 0); }, 0);
   }
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  // 5 caracteres al azar sin letras confusas (0/O, 1/I): unas 33 millones de combinaciones por día
+  function sufijo() {
+    var abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', s = '', i, b = new Uint8Array(5);
+    if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(b);
+    else for (i = 0; i < 5; i++) b[i] = Math.floor(Math.random() * 256);
+    for (i = 0; i < 5; i++) s += abc.charAt(b[i] % abc.length);
+    return s;
+  }
   function codigoPedido(ls) {
     var firma = ls.map(function (x) { return x.id + ':' + (x.plan || 0) + ':' + x.qty; }).join('|');
     try {
@@ -54,7 +62,7 @@
       if (g && g.firma === firma) return g.codigo;
     } catch (e) {}
     var hoy = new Date();
-    var cod = 'NX-' + pad2(hoy.getDate()) + pad2(hoy.getMonth() + 1) + '-' + (1000 + Math.floor(Math.random() * 9000));
+    var cod = 'NX-' + pad2(hoy.getDate()) + pad2(hoy.getMonth() + 1) + '-' + sufijo();
     try { sessionStorage.setItem('nexa_pedido', JSON.stringify({ firma: firma, codigo: cod })); } catch (e) {}
     return cod;
   }

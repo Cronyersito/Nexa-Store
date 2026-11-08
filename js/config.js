@@ -2,11 +2,12 @@
 window.NEXA = {
   WHATSAPP: "51987177574",          // con código de país y sin signos
   MONEDA: "S/",
+  SITIO: "https://nexastore-peru.netlify.app",   // dirección de tu web, sin "/" al final (para enlaces canónicos y SEO)
   CORREO: "semmir09@gmail.com",     // déjalo vacío ("") para ocultarlo
   // Redes sociales: pega el enlace completo. Las que dejes vacías no se muestran.
-  REDES: { instagram: "", tiktok: "", facebook: "" },
+  REDES: { instagram: "", tiktok: "https://www.tiktok.com/@crovex_oficial.pe", facebook: "https://www.facebook.com/share/1Dw6aG4N48/" },
 
-  ENTREGA: "Entrega automática",
+  ENTREGA: "Entrega por WhatsApp",
   DURACION: "30 días",
   STOCK_BAJO: 5,                    // desde este número se muestra "Quedan X"
 
@@ -79,7 +80,7 @@ window.NEXA = {
   // Si dejas cloudName o preset vacío, el botón de subir no aparece. NUNCA pongas aquí tu API secret.
   // incluirEnlace: true agrega el enlace de la imagen al mensaje de WhatsApp. Ponlo en false si tus
   // comprobantes son privados (el enlace no se abriría); en ese caso los buscas por el código del pedido.
-  CLOUDINARY: { cloudName: "cr-recargas-pe", preset: "comprobantes", carpeta: "comprobantes", incluirEnlace: true },
+  CLOUDINARY: { cloudName: "", preset: "nexa-store-Perú", carpeta: "comprobantes/{metodo}", incluirEnlace: true },
 
   // img: nombre del archivo dentro de la carpeta "logos"
   // top: true muestra la etiqueta TOP · old: precio anterior (opcional)

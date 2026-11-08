@@ -66,12 +66,19 @@
     descuento: function (a, b) { return descuentoDe(b.p) - descuentoDe(a.p) || a.i - b.i; }
   };
 
+  function norm(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+  var CAT_BUSQUEDA = { streaming: 'streaming', ia: 'ia inteligencia artificial', otros: 'otros' };
+  function coincide(p, palabras) {
+    var heno = norm(p.nombre + ' ' + p.tipo + ' ' + (CAT_BUSQUEDA[p.cat] || ''));
+    return palabras.every(function (w) { return heno.indexOf(w) !== -1; });
+  }
+
   function pintar() {
-    var q = buscar.value.trim().toLowerCase();
+    var palabras = norm(buscar.value.trim()).split(/\s+/).filter(Boolean);
     var modo = orden && ORDENES[orden.value] ? orden.value : 'recomendado';
     var html = PRODUCTOS.map(function (p, i) { return { p: p, i: i }; })
       .filter(function (x) {
-        return (filtro === 'all' || x.p.cat === filtro) && x.p.nombre.toLowerCase().indexOf(q) !== -1;
+        return (filtro === 'all' || x.p.cat === filtro) && coincide(x.p, palabras);
       })
       // los agotados siempre van al final
       .sort(function (a, b) {
@@ -114,6 +121,7 @@
 
   var fWa = document.getElementById('f-wa-num');
   if (fWa && /^\d{8,15}$/.test(WHATSAPP)) {
+    fWa.textContent = '+' + WHATSAPP.replace(/^(51)(\d{3})(\d{3})(\d{3})$/, '$1 $2 $3 $4');
     fWa.parentNode.hidden = false;
   }
   var fCorreo = document.getElementById('f-correo');
@@ -125,12 +133,28 @@
   }
   var redes = document.getElementById('redes');
   if (redes) {
-    var rh = '';
+    // Logo de cada red: logos/icon-<red>.png. Si el archivo no existe, se usa el icono dibujado.
+    var hayRedes = false;
+    redes.innerHTML = '';
     Object.keys(REDES).forEach(function (k) {
-      if (REDES[k]) rh += '<a href="' + REDES[k] + '" target="_blank" rel="noopener" aria-label="' + NOMBRES_REDES[k] + '">' + SOC[k] + '</a>';
+      if (!REDES[k]) return;
+      hayRedes = true;
+      var a = document.createElement('a');
+      a.href = REDES[k];
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.setAttribute('aria-label', NOMBRES_REDES[k]);
+      var img = document.createElement('img');
+      img.className = 'soc-img';
+      img.src = 'logos/icon-' + k + '.png';
+      img.alt = '';
+      img.width = 26;
+      img.height = 26;
+      img.onerror = function () { a.innerHTML = SOC[k]; };
+      a.appendChild(img);
+      redes.appendChild(a);
     });
-    redes.innerHTML = rh;
-    redes.hidden = rh === '';
+    redes.hidden = !hayRedes;
   }
 
   document.querySelectorAll('[data-pagos]').forEach(function (el) {
@@ -162,6 +186,9 @@
     if (!lista.length) return false;
 
     var total = lista.length, slides = '', puntos = '';
+    var sinMov = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var PAUSA = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+    var PLAY = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>';
     // posición de cada banner respecto al activo (-2..2), para que el carrusel avance deslizando y dé la vuelta sin saltos
     function pos(i, act) { var m = Math.floor(total / 2); return ((i - act + total + m) % total) - m; }
     lista.forEach(function (x, i) {
@@ -182,7 +209,7 @@
       '<div class="bn-track">' + slides + '</div>' +
       (total > 1 ? '<button type="button" class="bn-nav prev" aria-label="Banner anterior">' + FLECHA('M15 5l-7 7 7 7') + '</button>' +
         '<button type="button" class="bn-nav next" aria-label="Banner siguiente">' + FLECHA('M9 5l7 7-7 7') + '</button>' +
-        '<div class="bn-dots">' + puntos + '</div>' : '') +
+        '<div class="bn-dots">' + puntos + '</div>' + (sinMov ? '' : '<button type="button" class="bn-pause" aria-label="Pausar carrusel">' + PAUSA + '</button>') : '') +
       '</div>';
     el.hidden = false;
 
@@ -190,7 +217,8 @@
     var hojas = el.querySelectorAll('.bn');
     var dots = el.querySelectorAll('.bn-dot');
     var idx = 0, reloj = null;
-    var reducido = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var reducido = sinMov, pausado = false;
+    var btnPausa = el.querySelector('.bn-pause');
 
     function ir(n) {
       idx = (n + total) % total;
@@ -206,7 +234,7 @@
       dots.forEach(function (d, i) { if (i === idx) d.setAttribute('aria-current', 'true'); else d.removeAttribute('aria-current'); });
     }
     function parar() { clearInterval(reloj); reloj = null; }
-    function auto() { parar(); if (total > 1 && !document.hidden) reloj = setInterval(function () { ir(idx + 1); }, (parseFloat(C.BANNERS_SEGUNDOS) || 5) * 1000); }
+    function auto() { parar(); if (total > 1 && !document.hidden && !reducido && !pausado) reloj = setInterval(function () { ir(idx + 1); }, (parseFloat(C.BANNERS_SEGUNDOS) || 5) * 1000); }
 
     if (total > 1) {
       cont.addEventListener('mouseenter', parar);
@@ -229,8 +257,14 @@
     }
 
     el.addEventListener('click', function (e) {
-      var n = e.target.closest('.bn-nav'), d = e.target.closest('.bn-dot'), a = e.target.closest('[data-bn]');
-      if (n) ir(idx + (n.classList.contains('next') ? 1 : -1));
+      var n = e.target.closest('.bn-nav'), d = e.target.closest('.bn-dot'), a = e.target.closest('[data-bn]'), pz = e.target.closest('.bn-pause');
+      if (pz) {
+        pausado = !pausado;
+        pz.innerHTML = pausado ? PLAY : PAUSA;
+        pz.setAttribute('aria-label', pausado ? 'Reanudar carrusel' : 'Pausar carrusel');
+        if (pausado) parar(); else auto();
+      }
+      else if (n) ir(idx + (n.classList.contains('next') ? 1 : -1));
       else if (d) ir(parseInt(d.dataset.i, 10));
       else if (a) {
         var b = lista[parseInt(a.dataset.bn, 10)].b;

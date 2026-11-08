@@ -84,9 +84,27 @@
     if (a) a.href = "https://wa.me/" + C.WHATSAPP + "?text=" + encodeURIComponent(mensaje());
   }
 
+  // Al redibujar el panel el botón enfocado desaparece: se anota cuál era para devolverle el foco
+  function anotarFoco() {
+    var a = document.activeElement;
+    if (!a || drawer.hidden || !drawer.contains(a)) return null;
+    var li = a.closest && a.closest('.ci');
+    if (!li) return null;
+    return { key: li.dataset.key, q: a.getAttribute('data-q'), del: a.hasAttribute('data-del') };
+  }
+  function devolverFoco(m) {
+    if (!m) return;
+    var lis = body.querySelectorAll('.ci'), li = null, t = null;
+    for (var i = 0; i < lis.length; i++) if (lis[i].dataset.key === m.key) li = lis[i];
+    if (li) t = m.q ? li.querySelector('[data-q="' + m.q + '"]') : (m.del ? li.querySelector('[data-del]') : null);
+    if (!t) t = body.querySelector('.ci-del') || drawer.querySelector('.cd-close');
+    if (t) t.focus();
+  }
+
   // ---- Dibujar ----
   function pintar() {
     var n = cantidad();
+    var foco = anotarFoco();
     oyentes.forEach(function (fn) { try { fn(); } catch (e) {} });
 
     document.querySelectorAll('[data-carrito] .cart-count').forEach(function (b) {
@@ -102,6 +120,7 @@
       body.innerHTML = '<div class="cd-empty">' + BOLSA + '<strong>Tu carrito está vacío</strong><p>Agrega los productos que quieras y envía todo en un solo mensaje por WhatsApp.</p><a class="btn primary" href="index.html#catalogo" data-cerrar>Ver catálogo</a></div>';
       foot.innerHTML = '';
       foot.hidden = true;
+      devolverFoco(foco);
       return;
     }
 
@@ -135,6 +154,7 @@
     foot.querySelector('#cd-codigo').value = codigoPrevio;
     foot.querySelector('#cd-codigo').addEventListener('input', actualizarEnlace);
     actualizarEnlace();
+    devolverFoco(foco);
   }
 
   // ---- Aviso ----
