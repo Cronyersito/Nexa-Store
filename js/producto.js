@@ -52,14 +52,13 @@
   var p = P[idx];
   var fondo = FONDOS[idx % FONDOS.length];
   var esPerfil = /perfil/i.test(p.tipo);
-  var esCompleta = /cuenta completa/i.test(p.tipo);
   var esClave = /clave/i.test(p.tipo);
   var planes = p.planes || null;
   var planSel = planes ? planes[0] : null;
   function precioSel() { return planSel ? planSel.precio : p.precio; }
   function oldSel() { return planSel ? (planSel.old || 0) : (p.old || 0); }
   function durSel() { return planSel ? C.etiquetaMeses(planSel.meses) : (p.duracion || C.DURACION); }
-  function periodoTxt() { return (esClave ? 'Licencia' : esCompleta ? 'Cuenta completa' : esPerfil ? 'Perfil' : 'Acceso') + ' · ' + durSel(); }
+  function periodoTxt() { return (esClave ? 'Licencia' : esPerfil ? 'Perfil' : 'Acceso') + ' · ' + durSel(); }
   function totalHtml() {
     var pr = precioSel(), od = oldSel(), ah = od ? od - pr : 0, ds = od ? Math.round((1 - pr / od) * 100) : 0;
     return '<div><span class="tot-l">Total del producto</span>' + (ah > 0 ? '<span class="save">Ahorras ' + dinero(ah) + '</span>' : '') + '</div>' +
@@ -106,15 +105,11 @@
 
   var intro = esClave
     ? "Clave digital de activación, lista para usar."
-    : esCompleta
-    ? "Cuenta completa de uso exclusivo para ti, con todos sus perfiles."
     : esPerfil
     ? "Perfil asignado dentro de una cuenta compartida administrada por Nexa Store Perú."
     : "Acceso a " + p.nombre + " administrado por Nexa Store Perú.";
   var descripcion = esClave
     ? "Recibes una clave digital para activar " + p.nombre + " en tu equipo. Te enviamos la clave y las indicaciones de activación por WhatsApp."
-    : esCompleta
-    ? "Recibes una cuenta completa de " + p.nombre + ", sin compartirla con otros clientes, para que uses los perfiles que necesites. Te acompañamos por WhatsApp con las indicaciones de uso durante todo el periodo contratado."
     : esPerfil
     ? "Recibes un perfil asignado dentro de una cuenta compartida administrada por Nexa Store Perú. Te acompañamos por WhatsApp con las indicaciones de uso durante todo el periodo contratado."
     : "Recibes acceso a " + p.nombre + " mediante una cuenta compartida administrada por Nexa Store Perú. Te acompañamos por WhatsApp con las indicaciones de uso durante todo el periodo contratado.";
@@ -176,7 +171,7 @@
         '<p>' + descripcion + '</p>' +
         statsHtml +
         '<div class="pd-cards">' +
-          '<div><span>' + ico('user') + '</span><strong>' + (esClave ? 'Clave digital' : esCompleta ? 'Cuenta completa' : esPerfil ? 'Perfil asignado' : 'Acceso incluido') + '</strong><p>' + (esClave ? 'Recibes una clave lista para activar en tu equipo.' : esCompleta ? 'La cuenta es solo para ti: no se vende a otros clientes durante tu periodo.' : esPerfil ? 'Obtienes un perfil preparado para tu uso personal dentro de la cuenta.' : 'Obtienes acceso al servicio listo para usar, con tus indicaciones.') + '</p></div>' +
+          '<div><span>' + ico('user') + '</span><strong>' + (esClave ? 'Clave digital' : esPerfil ? 'Perfil asignado' : 'Acceso incluido') + '</strong><p>' + (esClave ? 'Recibes una clave lista para activar en tu equipo.' : esPerfil ? 'Obtienes un perfil preparado para tu uso personal dentro de la cuenta.' : 'Obtienes acceso al servicio listo para usar, con tus indicaciones.') + '</p></div>' +
           '<div><span>' + ico('smile') + '</span><strong>Fácil de usar</strong><p>Te enviamos los datos y las indicaciones para que empieces a usarlo sin complicaciones.</p></div>' +
           '<div><span>' + ico('headset') + '</span><strong>Soporte por WhatsApp</strong><p>Si tienes algún inconveniente durante tu servicio, escríbenos y te ayudamos.</p></div>' +
         '</div>' +
@@ -185,7 +180,7 @@
         '<span class="kick">Antes de comprar</span>' +
         '<h2>Información importante</h2>' +
         '<ul class="pd-list">' +
-          '<li>' + ico('check', 18) + '<span><strong>Uso personal.</strong> ' + (esClave ? 'La clave es para un solo equipo; no la compartas ni la revendas.' : esCompleta ? 'Puedes usar los perfiles de la cuenta, pero no la compartas ni la revendas.' : 'El acceso es solo para ti; no lo compartas con otras personas.') + '</span></li>' +
+          '<li>' + ico('check', 18) + '<span><strong>Uso personal.</strong> ' + (esClave ? 'La clave es para un solo equipo; no la compartas ni la revendas.' : 'El acceso es solo para ti; no lo compartas con otras personas.') + '</span></li>' +
           (esClave ? '<li>' + ico('check', 18) + '<span><strong>Activación.</strong> Activa la clave cuando vayas a usarla; te enviamos las indicaciones.</span></li>' : '<li>' + ico('check', 18) + '<span><strong>No modifiques la cuenta.</strong> No cambies correo, contraseña, PIN ni la configuración del acceso.</span></li>') +
           '<li>' + ico('check', 18) + '<span><strong>Duración.</strong> El servicio incluye <span id="info-dur">' + durSel() + '</span>.</span></li>' +
           '<li>' + ico('check', 18) + '<span><strong>Soporte.</strong> Ante cualquier incidencia, escríbenos por WhatsApp antes de hacer cambios.</span></li>' +
@@ -208,7 +203,7 @@
         '<small>Lo validamos por WhatsApp al confirmar tu pedido.</small>' +
       '</details>') +
       '<div class="bc-total" id="bc-total">' + totalHtml() + '</div>' +
-      '<div class="stock' + (agotado ? ' out' : bajo ? ' low' : '') + '"><i></i>' + (agotado ? 'Agotado por ahora' : bajo ? 'Quedan solo ' + p.stock + (esCompleta ? ' cuentas' : ' accesos') : p.stock + (esCompleta ? ' cuentas disponibles' : ' accesos disponibles')) + '</div>' +
+      '<div class="stock' + (agotado ? ' out' : bajo ? ' low' : '') + '"><i></i>' + (agotado ? 'Agotado por ahora' : bajo ? 'Quedan solo ' + p.stock + ' accesos' : p.stock + ' accesos disponibles') + '</div>' +
       (agotado
         ? '<div class="bc-actions"><a id="avisar" class="btn primary big" href="' + wa('Hola, quiero que me avisen cuando haya stock de ' + p.nombre + ' (' + p.tipo + ').') + '" target="_blank" rel="noopener"><img class="wa-ico" src="logos/icon-whatsapp.png" alt="" width="24" height="24" onerror="this.remove()">Avisarme cuando haya stock</a>' +
           '<button type="button" id="compartir" class="bc-share" aria-label="Compartir este producto">' + ico('share', 20) + '</button></div>' +
