@@ -1,0 +1,5 @@
+   User-agent: *
+   Allow: /
+   Disallow: /pago.html
+
+   Sitemap: https://nexastore-peru.netlify.app/sitemap.xml

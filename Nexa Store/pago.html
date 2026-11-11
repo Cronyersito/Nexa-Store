@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pago – Nexa Store Perú</title>
+<link rel="icon" type="image/png" href="logos/nexa-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
+<meta name="theme-color" content="#080818">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="css/style.css?v=6">
+<script src="js/config.js?v=6"></script>
+<script src="js/extras.js?v=6"></script>
+</head>
+<body>
+<div class="page">
+  <div class="glow a" aria-hidden="true"></div>
+  <div class="glow b" aria-hidden="true"></div>
+
+  <header>
+    <div class="bar">
+      <a href="index.html" class="logo" aria-label="Nexa Store Perú, inicio"><img class="logo-ico" src="logos/nexa-icon.png" alt="" width="40" height="40"><span class="logo-txt">Nexa <span class="zone">Store</span> Perú</span></a>
+      <nav id="menu" aria-label="Principal">
+        <a href="index.html">Inicio</a>
+        <a href="index.html#catalogo">Catálogo</a>
+        <a href="index.html#como-comprar">Cómo comprar</a>
+        <a href="#contacto">Contacto</a>
+      </nav>
+      <div class="actions">
+        <button class="cart-btn" type="button" data-carrito aria-label="Abrir carrito">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.2"/><circle cx="18" cy="20" r="1.2"/><path d="M2 3h3l2.4 11.2a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.5L21 7H5.5"/></svg>
+          <span class="cart-count" hidden>0</span>
+        </button>
+        <a href="index.html#catalogo" class="btn primary">Comprar ahora</a>
+        <button class="menu-btn" type="button" aria-controls="menu" aria-expanded="false" aria-label="Abrir menú">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h16M3 11h16M3 16h16"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="pg-wrap" id="pago"></main>
+
+  <footer class="site-footer" id="contacto">
+    <div class="foot-inner">
+      <div class="foot-grid">
+        <div class="foot-brand">
+          <a href="index.html" class="foot-logo" aria-label="Nexa Store Perú, inicio"><img class="logo-ico" src="logos/nexa-icon.png" alt="" width="40" height="40"><span class="logo-txt">Nexa <span class="zone">Store</span> Perú</span></a>
+          <p class="foot-status"><i></i>Atención por WhatsApp</p>
+          <p class="foot-company">CRONYER_STORE_PERÚ</p>
+          <p class="foot-about">Streaming, inteligencia artificial y suscripciones digitales al mejor precio, con atención personalizada en cada compra.</p>
+        </div>
+
+        <div class="foot-col">
+          <h4>Tienda</h4>
+          <ul>
+            <li><a href="index.html#catalogo">Catálogo</a></li>
+            <li><a href="index.html#como-comprar">Cómo comprar</a></li>
+          </ul>
+        </div>
+
+        <div class="foot-col">
+          <h4>Políticas</h4>
+          <ul>
+            <li><a href="terminos.html">Términos y condiciones</a></li>
+            <li><a href="privacidad.html">Política de privacidad</a></li>
+            <li><a href="reembolsos.html">Garantía y reembolsos</a></li>
+          </ul>
+        </div>
+
+        <div class="foot-col">
+          <h4>Ayuda</h4>
+          <ul>
+            <li><a href="index.html#como-comprar">Cómo funciona</a></li>
+            <li><a href="#" data-wa>Soporte por WhatsApp</a></li>
+          </ul>
+        </div>
+
+        <div class="foot-col foot-contact">
+          <h4>Contacto</h4>
+          <p class="foot-line" id="f-correo" hidden><a href="#"></a></p>
+          <p class="foot-line" id="f-wa" hidden>WhatsApp: <a href="#" data-wa id="f-wa-num">CRONYER_STORE_PERÚ</a></p>
+          <a href="#" data-wa class="btn primary foot-btn"><img class="wa-ico" src="logos/icon-whatsapp.png" alt="" width="24" height="24">Escribir por WhatsApp</a>
+          <div class="socials" id="redes" hidden></div>
+        </div>
+      </div>
+
+      <div class="foot-pay"><span class="foot-pay-t">Métodos de pago</span><div class="pay-list" data-pagos></div></div>
+
+      <div class="foot-bottom">
+        <span>© <span id="anio">2026</span> Nexa Store Perú. Todos los derechos reservados.</span>
+        <span class="foot-note">Precios, disponibilidad y métodos de pago sujetos a las condiciones vigentes.</span>
+        <a href="#" class="to-top" aria-label="Volver arriba"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
+      </div>
+      <p class="foot-credit">Diseñado y programado por <strong>Cronyer Alama Bereche</strong> · Junior Web Developer</p>
+    </div>
+  </footer>
+</div>
+<script src="js/carrito.js?v=6"></script>
+<script src="js/script.js?v=6"></script>
+<script src="js/pago.js?v=6"></script>
+</body>
+</html>
